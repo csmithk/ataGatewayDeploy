@@ -1,9 +1,9 @@
 ﻿<#
 
-PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLLERS, AFTER ALL!
+PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLLERS
 
 This script will deploy ATA Lightweight Gateway to domain controllers.
-If the $dcFileName parameter is provided, the script will obtain the DC names from the file, otherwise it will pull all DCs in the forest.
+Uncomment the code to get all domain controllers in the forest, if ATA will be deployed to all dcs and do not pass the file name for the dcs.
 
 Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemote)
 The script must be run with credentials that allow read, write and execute privileges on the domain controllers (usually a DADM).
