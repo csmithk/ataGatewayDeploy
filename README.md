@@ -23,8 +23,7 @@ Input and output files have valid locations.
 Active Directory module has been installed
 
 Parameters:
-    Mandatory:
-
+    
     $sourceFullName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
     $userName - user name with privileges to install gateway
     $userPwd - password for user
