@@ -111,7 +111,7 @@ $forest | ForEach-Object {$_.Domains} |
 #if $dcFileName is provided, returns a list of domain controllers from file
 #otherwise, gets all domain controllers in the current forest
 function Get-DomainControllers(){
-    if($dcFileName -ne $null -or $dcFileName.Length > 0){
+    if($dcFileName -ne $null -or $dcFileName.Length -gt 0){
         Get-Content $dcFileName
     }
    <# 
