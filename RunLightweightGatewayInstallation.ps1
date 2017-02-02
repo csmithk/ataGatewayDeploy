@@ -162,7 +162,7 @@ function GetFileNameFromPath([string] $fullPath){
         } 
         
         $ataExe = $destinationFullPath.Replace("zip", "exe")    
-        $cmdArgs = " /q NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
+        $cmdArgs = " /q /norestart NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
 
 #here-strings don't like whitespace or tabs
 $myScriptBlock = [ScriptBlock]::Create(@"
