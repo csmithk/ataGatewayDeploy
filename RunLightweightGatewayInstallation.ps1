@@ -51,7 +51,7 @@ param(
 [string] $dcFileName = $null,
 [string] $errorFile = 'c:\temp\ATADeployErrors.csv',
 [string] $completedFile = 'c:\temp\ATADeployCompleted.csv',
-[string] $destinationRootPath = 'c$\temp\'
+[string] $destinationRootPath = 'c$\temp'
 
 )
 
