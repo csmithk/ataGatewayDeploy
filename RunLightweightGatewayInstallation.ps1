@@ -166,7 +166,7 @@ function Get-DomainControllers(){
         $ataExe = $fileName.Replace("zip", "exe") 
         $ataExe = Join-Path $destionationRootPath $ataExe
         $ataExe = $ataExe.Replace('$', ':')
-        $cmdArgs = " /q /norestart NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
+        $cmdArgs = "/q /norestart NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
 
 #here-strings don't like whitespace or tabs
 $myScriptBlock = [ScriptBlock]::Create(@"
