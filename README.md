@@ -12,7 +12,7 @@ The script must be run with credentials that allow read, write and execute privi
 
 The script transmits the local ATA center adminstrator account credentials in the clear.  Ensure that this is a low privileged account and consider changing the password.
 
-The script will launch a job for each DC:
+##The script will launch a job for each DC:
 copy Microsoft ATA Gateway Setup.zip file 
 extract Microsoft ATA Gateway Setup.zip file 
 run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter
