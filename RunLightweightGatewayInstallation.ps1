@@ -1,9 +1,7 @@
-﻿﻿<#
-
+﻿<#
 PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLLERS
 
 This script will deploy ATA Lightweight Gateway to domain controllers.
-Uncomment the code to get all domain controllers in the forest, if ATA will be deployed to all dcs and do not pass the file name for the dcs.
 
 Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemote)
 The script must be run with credentials that allow read, write and execute privileges on the domain controllers (usually a DADM).
@@ -23,7 +21,6 @@ Active Directory module has been installed
 
 Parameters:
     Mandatory:
-
     $sourceFullName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
     $userName - user name with privileges to install gateway
     $userPwd - password for user
@@ -35,6 +32,7 @@ Parameters:
     Parameter $completedFile defaults to c:\temp\ATADeployCompleted.csv
     Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
 #>
+
 
 param(
 [Parameter(Mandatory=$true, Position=0, HelpMessage="Source name is the full path and file name for the installation zip file")]
@@ -94,8 +92,9 @@ function Clean-Jobs(){
     Clean-FaileddJobs
 }
 
-
+<#
 #Get all the domain controller names in the forest
+
 function Get-ActiveDirectoryDomainControllers(){
 $forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
 $domainControllers = @()
@@ -108,26 +107,22 @@ $forest | ForEach-Object {$_.Domains} |
     $domainControllers
 }
 
-#if $dcFileName is provided, returns a list of domain controllers from file
-#otherwise, gets all domain controllers in the current forest
+#>
+
+#if $dcFileName is provided, returns a list of domain controllers from filet
 function Get-DomainControllers(){
     if($dcFileName -ne $null -or $dcFileName.Length -gt 0){
         Get-Content $dcFileName
     }
-   <# 
-   uncomment this if the intent is to get all domain controllers in the forst
-   else{
-        Get-ActiveDirectoryDomainControllers
-    }
-    #>
 }
 
 #will be run as a job for each domain controller
  $Scriptblock = {
     param ([string] $dcName,
             [string] $destionationRootPath,
-            [string] $sourceFullName
-    )
+            [string] $sourceFullName,
+            [string] $userName,
+            [string] $userPwd )
 
     function GetFileNameFromPath([string] $fullPath){
         $path = $fullPath.Split("\");
@@ -141,6 +136,7 @@ function Get-DomainControllers(){
     $VerbosePreference = 'Continue'
     $destinationPath = "\\$dcName\$destinationRootPath"
     Write-Verbose "Destination path = $destinationPath"
+
     #test the connection with one ping, suppress any error messages
     if(Test-Connection -ComputerName $dcName -Count 1 -Quiet){
         #create path if it doesn't exist
@@ -151,9 +147,10 @@ function Get-DomainControllers(){
         Copy-Item -Path "$sourceFullName" -Destination "$destinationPath" -Force
         $fileName = GetFileNameFromPath $sourceFullName
 
-        $destinationFullPath = "$destinationPath\$fileName"
+        $destinationFullPath = Join-Path $destinationPath$fileName
 
         $shell = New-Object -ComObject shell.application
+
         $zip = $shell.NameSpace("$destinationFullPath”)
         foreach($item in $zip.Items()){
             $zipFileName = GetfileNameFromPath $item.Path
@@ -166,16 +163,21 @@ function Get-DomainControllers(){
             $shell.NameSpace("$destinationPath").CopyHere($item)
         } 
         
-        $ataExe = $destinationFullPath.Replace("zip", "exe")    
+        $ataExe = $fileName.Replace("zip", "exe") 
+        $ataExe = Join-Path $destionationRootPath $ataExe
+        $ataExe = $ataExe.Replace('$', ':')
         $cmdArgs = " /q /norestart NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
 
 #here-strings don't like whitespace or tabs
 $myScriptBlock = [ScriptBlock]::Create(@"
-& '$ataExe' '$cmdArgs'
+& cmd '$ataExe' $cmdArgs
 
 "@)
+    Write-Verbose "My script block: $myScriptBlock"
+
     $s = New-PSSession $dcName
-    Invoke-Command -Session $s -ScriptBlock $myScriptBlock -asJob -ErrorAction Stop -WarningAction Stop
+
+    Invoke-Command -Session $s -ScriptBlock $myScriptBlock -asJob -ErrorAction Continue -WarningAction Continue
     Remove-PSSession $s
                     
     }
@@ -190,6 +192,7 @@ if(!(Test-Path $completedFile)){
 }
 
 $domainControllers = Get-DomainControllers
+
 Write-Host $domainControllers
 
 foreach($dc in $domainControllers){
@@ -207,7 +210,7 @@ foreach($dc in $domainControllers){
    
     Clean-CompletedJobs
 
-    $job = Start-Job -Name $dc -ScriptBlock $ScriptBlock -ArgumentList $dc, $destinationPath, $sourceFullName
+    $job = Start-Job -Name $dc -ScriptBlock $ScriptBlock -ArgumentList $dc, $destinationPath, $sourceFullName $userName $userPwd
     Write-Host Started job $job.Name
     Write-Host "Running job count is $runningCount"
     $error.clear()
