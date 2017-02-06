@@ -1,14 +1,13 @@
 ﻿<#
-PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLLERS
+This script will deploy ATA Gateway to domain controllers or standalone ATA Gateway servers.
 
-This script will deploy ATA Lightweight Gateway to domain controllers.
+ATA Gateway servers must be enabled for PowerShell remoting (see Enable-PSRemoting)
+The script will prompt for credentials.  These credentials require read, write and execute privileges on the gateway servers (usually a DADM).
 
-Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemoting)
-The script must be run with credentials that allow read, write and execute privileges on the domain controllers (usually a DADM).
+The script's $userName and $userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group. 
+Ensure that this low privileged account is used and consider changing the password afterward, as the script transmits this in the clear to the servers.
 
-The script transmits the local ATA center adminstrator account credentials in the clear.  Ensure that this low privileged account is used and consider changing the password.
-
-The script will launch a job for each DC:
+The script will launch a job for each server:
 copy Microsoft ATA Gateway Setup.zip file 
 extract Microsoft ATA Gateway Setup.zip file 
 run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter
@@ -21,10 +20,10 @@ Active Directory module has been installed
 
 Parameters:
     Mandatory:
-    $sourceFullName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
+    $zipMediaName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
     $userName - user name with privileges to install gateway
     $userPwd - password for user
-    $dcFileName file name that has the list of domain controllers to install.  There is code below that will get all dcs in the forest, it is commented out for now
+    $serverFileName file name that has the list of domain controllers/standalone servers to install.  There is code below that will get all dcs in the forest, it is commented out for now
    
     Defaults:
     
@@ -33,24 +32,24 @@ Parameters:
     Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
 #>
 
-
 param(
-#[Parameter(Mandatory=$true, Position=0, HelpMessage="Source name is the full path and file name for the installation zip file")]
+[Parameter(Mandatory=$true, Position=0, HelpMessage="Source name is the full path and file name for the installation zip file")]
 [ValidateNotNullOrEmpty()]
-[string] $sourceFullName = 'c:\temp\Microsoft ATA Gateway Setup.zip',
-#[Parameter(Mandatory=$true, Position=1, HelpMessage="This is the user name that is in the local Microsoft Advanced Threat Analytics Administrators Group")]
+[string] $zipMediaName,
+[Parameter(Mandatory=$true, Position=1, HelpMessage="This is the user name that is in the local Microsoft Advanced Threat Analytics Administrators Group")]
 [ValidateNotNullOrEmpty()]
-[string] $userName = 'atacenter\localTest',
-#[Parameter(Mandatory=$true, Position=2, HelpMessage="This is the password for the local user for installation" )]
+[string] $userName,
+[Parameter(Mandatory=$true, Position=2, HelpMessage="This is the password for the local user for installation" )]
 [ValidateNotNullOrEmpty()]
-[string] $userPwd= 'pass@word1Pass@word1',
-#[Parameter(Mandatory=$true, Position=3, HelpMessage="Please enter full file name to acquire domain controllers from file, or leave blank to get all DCs in the forest")]
+[string] $userPwd,
+[Parameter(Mandatory=$true, Position=3, HelpMessage="Please enter full file name to acquire ATA Gateway servers text file")]
 [ValidateNotNullOrEmpty()]
-[string] $dcFileName = 'c:\temp\dcs2.txt',
+[string] $serverFileName,
+[Parameter(HelpMessage="Please enter destination directory for installation media (UNC path,. e.g., c$\temp")]
+[ValidateNotNullOrEmpty()]
+[string] $destinationRootPath = 'c$\temp',
 [string] $errorFile = 'c:\temp\ATADeployErrors.csv',
-[string] $completedFile = 'c:\temp\ATADeployCompleted.csv',
-[string] $destinationRootPath = 'c$\temp'
-
+[string] $completedFile = 'c:\temp\ATADeployCompleted.csv'
 )
 
 #write failed jobs to file and remove jobs
@@ -83,65 +82,49 @@ function Clean-CompletedJobs(){
     $JobsCompleted | Remove-Job
 }
 
+#cleans up completed and failed jobs
 function Clean-Jobs(){
     Clean-CompletedJobs
     Clean-FaileddJobs
 }
 
-<#
-#Get all the domain controller names in the forest
-
-function Get-ActiveDirectoryDomainControllers(){
-$forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
-$domainControllers = @()
-
-$forest | ForEach-Object {$_.Domains} |
-    ForEach-Object {$_.DomainControllers} | 
-        ForEach-Object {
-            $domainControllers += $_.Name
-        }
-    $domainControllers
-}
-
-#>
-
-#if $dcFileName is provided, returns a list of domain controllers from filet
-function Get-DomainControllers(){
-    if($dcFileName -ne $null -or $dcFileName.Length -gt 0){
-        Get-Content $dcFileName
+#returns a list of ATA Gateway servers from file
+function Get-Servers([Parameter(Mandatory=$true)][string] $serverFileName){
+    if($serverFileName -ne $null -or $serverFileName.Length -gt 0){
+        Get-Content $serverFileName
     }
 }
 
-#will be run as a job for each domain controller
- function DeployAta {
-    param ([string] $dcName,
-            [string] $destionationRootPath,
-            [string] $sourceFullName,
-            [string] $userName,
-            [string] $userPwd )
-
-    function GetFileNameFromPath([string] $fullPath){
+function GetFileNameFromPath([Parameter(Mandatory=$true)][string] $fullPath){
         $path = $fullPath.Split("\");
         $count = $path.Count
 
         if($count -gt 0){
             $path[$count-1]
         }
-    }
+}
 
-    $VerbosePreference = 'Continue'
-    $destinationPath = "\\$dcName\$destinationRootPath"
+#will be run as a job for each server
+ function New-ATADeployment {[CmdletBinding()]
+    param ([Parameter(Mandatory=$true)] [string] $serverName,
+           [Parameter(Mandatory=$true)] [string] $destionationRootPath,
+           [Parameter(Mandatory=$true)] [string] $zipMediaName,
+           [Parameter(Mandatory=$true)] [string] $userName,
+           [Parameter(Mandatory=$true)] [string] $userPwd,
+           [Parameter(Mandatory=$true)] [System.Management.Automation.PSCredential] $credential )
+
+    $destinationPath = "\\$serverName\$destinationRootPath"
     Write-Verbose "Destination path = $destinationPath"
 
     #test the connection with one ping, suppress any error messages
-    if(Test-Connection -ComputerName $dcName -Count 1 -Quiet){
+    if(Test-Connection -ComputerName $serverName -Count 1 -Quiet){
         #create path if it doesn't exist
         if(!(Test-Path $destinationPath)){
             New-Item -Path $destinationPath -ItemType Directory -Value $destinationPath -force
         }
         
-        Copy-Item -Path "$sourceFullName" -Destination "$destinationPath" -Force
-        $fileName = GetFileNameFromPath $sourceFullName
+        Copy-Item -Path "$zipMediaName" -Destination "$destinationPath" -Force
+        $fileName = GetFileNameFromPath $zipMediaName
 
         $destinationFullPath = Join-Path $destinationPath $fileName
 
@@ -170,10 +153,7 @@ $myScriptBlock = [ScriptBlock]::Create(@"
 
 "@)
 
-
-    Write-Verbose "My script block: $myScriptBlock"
-   
-    $s = New-PSSession $dcName -Credential $credential
+    $s = New-PSSession $serverName -Credential $credential
     Invoke-Command -Session $s -ScriptBlock $myScriptBlock -asJob -ErrorAction Continue -WarningAction Continue
     Remove-PSSession $s                  
     }
@@ -184,21 +164,18 @@ $sleepSeconds = 60
 $credential = Get-Credential
 
 #remove quotes, if any from source full name
-$sourceFullName = $sourceFullName.Replace('"', '')
-$sourceFullName = $sourceFullName.Replace("'", '')
-
+$zipMediaName = $zipMediaName.Replace('"', '')
+$zipMediaName = $zipMediaName.Replace("'", '')
 
 #create the completed file to store results
 if(!(Test-Path $completedFile)){
     New-Item -Path $completedFile -ItemType File
 }
 
-$domainControllers = Get-DomainControllers
+$servers = Get-Servers $serverFileName
 
-Write-Host $domainControllers
-
-foreach($dc in $domainControllers){
-    Write-Host $dc deploying
+foreach($server in $servers){
+    Write-Host $server deploying
 
     #wait until there are no more than $maxThreads running
     $runningcount = @(Get-Job | Where {$_.State -eq "Running"}).Count
@@ -212,9 +189,11 @@ foreach($dc in $domainControllers){
    
     Clean-CompletedJobs
 
-    DeployAta $dc $destinationRootPath $sourceFullName $userName $userPwd
+    New-ATADeployment $server $destinationRootPath $zipMediaName $userName $userPwd $credential
+
     Write-Host Started job $job.Name
     Write-Host "Running job count is $runningCount"
+
     $error.clear()
 
 }
