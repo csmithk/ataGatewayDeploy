@@ -4,8 +4,8 @@ This script will deploy the ATA Gateway to domain controllers or standalone ATA 
 ATA Gateway servers must be enabled for PowerShell remoting (see Enable-PSRemoting)
 The script will prompt for credentials.  These credentials require read, write and execute privileges on the gateway servers (usually a DADM).
 
-The script's $userName and $userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group. 
-Ensure that this low privileged account is used and consider changing the password afterward, as the script transmits this in the clear to the servers.
+The script's $userName and $userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group.   
+Ensure that this low privileged account is used and consider changing the password afterward.
 
 The script will launch a job for each server:
 
