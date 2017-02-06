@@ -23,7 +23,7 @@ Parameters:
     $zipMediaName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
     $userName - user name with privileges to install gateway
     $userPwd - password for user
-    $serverFileName file name that has the list of domain controllers/standalone servers to install.  There is code below that will get all dcs in the forest, it is commented out for now
+    $serverFileName file name that has the list of domain controllers/standalone servers to install. 
    
     Defaults:
     
