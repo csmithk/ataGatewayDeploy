@@ -1,42 +1,32 @@
 # Advanced Threat Analytics Lightweight Gateway Deploy
-PowerShell script to deploy the Advanced Threat Analytics Lightweight Gateway to domain controllers
+This script will deploy ATA Gateway to domain controllers or standalone ATA Gateway servers.
 
-PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLOLLERS!
-This has been tested in my lab, it is strongly suggested that the user test this in their own environment.
+ATA Gateway servers must be enabled for PowerShell remoting (see Enable-PSRemoting)
+The script will prompt for credentials.  These credentials require read, write and execute privileges on the gateway servers (usually a DADM).
 
-This script will deploy ATA Lightweight Gateway to domain controllers.
-There is commented code to pull all domain controllers in the forest.  It is recommended that a file be used listing the domain controllers that will be installed.
+The script's $userName and $userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group. 
+Ensure that this low privileged account is used and consider changing the password afterward, as the script transmits this in the clear to the servers.
 
-Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemote)
-The script must be run with credentials that allow read, write and execute privileges on the domain controllers (usually a DADM).
-
-The script transmits the local ATA center adminstrator account credentials in the clear.  Ensure that this is a low privileged account and consider changing the password.
-
-###The script will launch a job for each DC:
-
+The script will launch a job for each server:
 copy Microsoft ATA Gateway Setup.zip file 
-
 extract Microsoft ATA Gateway Setup.zip file 
-
 run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter
-    Prevents restart (/norestart).  If that is desired, remove the /norestart parameter to the command line inside the script
+    Prevents restart (/norestart).  If that is desired remove the /norestart parameter to the command line below
 
 ###Assumes: 
 User name and password provided are a valid user in the local ATA Center Microsoft Advanced Threat Analytics Administrators group.
-
 Input and output files have valid locations.
-
-Active Directory module has been installed.
+Active Directory module has been installed
 
 ###Parameters:
-    
-    $sourceFullName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
+    Mandatory:
+    $zipMediaName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
     $userName - user name with privileges to install gateway
     $userPwd - password for user
-    $dcFileName file name that has the list of domain controllers to install.  There is code below that will get all dcs in the forest,         it is commented out for now
+    $serverFileName file name that has the list of domain controllers/standalone servers to install.  There is code below that will get all dcs in the forest, it is commented out for now
    
     Defaults:
     
     Parameter $errorFile defaults to c:\temp\ATADeployErrors.csv
     Parameter $completedFile defaults to c:\temp\ATADeployCompleted.csv
-    Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath 
+    Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
