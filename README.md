@@ -1,4 +1,4 @@
-# Advanced Threat Analytics Lightweight Gateway Deploy
+# Advanced Threat Analytics (ATA) Gateway Deployment
 This script will deploy ATA Gateway to domain controllers or standalone ATA Gateway servers.
 
 ATA Gateway servers must be enabled for PowerShell remoting (see Enable-PSRemoting)
