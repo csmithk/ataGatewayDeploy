@@ -8,10 +8,12 @@ The script's $userName and $userPwd are the local account created on the ATA Ser
 Ensure that this low privileged account is used and consider changing the password afterward, as the script transmits this in the clear to the servers.
 
 The script will launch a job for each server:
+
 copy Microsoft ATA Gateway Setup.zip file 
+
 extract Microsoft ATA Gateway Setup.zip file 
-run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter
-    Prevents restart (/norestart).  If that is desired remove the /norestart parameter to the command line below
+
+run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter. Prevents restart (/norestart).  If restart is desired remove the /norestart parameter to the command line below
 
 ###Assumes: 
 User name and password provided are a valid user in the local ATA Center Microsoft Advanced Threat Analytics Administrators group.
