@@ -30,6 +30,5 @@ Active Directory module has been installed on client machine.
    
     Defaults:
     
-    Parameter $errorFile defaults to c:\temp\ATADeployErrors.csv
     Parameter $completedFile defaults to c:\temp\ATADeployCompleted.csv
     Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
