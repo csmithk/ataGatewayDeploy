@@ -3,7 +3,7 @@ PLEASE READ, THIS IS DEPLOYED ON DOMAIN CONTROLLERS
 
 This script will deploy ATA Lightweight Gateway to domain controllers.
 
-Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemote)
+Domain controllers must be enabled for PowerShell remoting (see Enable-PSRemoting)
 The script must be run with credentials that allow read, write and execute privileges on the domain controllers (usually a DADM).
 
 The script transmits the local ATA center adminstrator account credentials in the clear.  Ensure that this low privileged account is used and consider changing the password.
@@ -35,27 +35,23 @@ Parameters:
 
 
 param(
-[Parameter(Mandatory=$true, Position=0, HelpMessage="Source name is the full path and file name for the installation zip file")]
+#[Parameter(Mandatory=$true, Position=0, HelpMessage="Source name is the full path and file name for the installation zip file")]
 [ValidateNotNullOrEmpty()]
-[string] $sourceFullName,
-[Parameter(Mandatory=$true, Position=1, HelpMessage="This is the user name that is in the local Microsoft Advanced Threat Analytics Administrators Group")]
+[string] $sourceFullName = 'c:\temp\Microsoft ATA Gateway Setup.zip',
+#[Parameter(Mandatory=$true, Position=1, HelpMessage="This is the user name that is in the local Microsoft Advanced Threat Analytics Administrators Group")]
 [ValidateNotNullOrEmpty()]
-[string] $userName,
-[Parameter(Mandatory=$true, Position=2, HelpMessage="This is the password for the local user for installation" )]
+[string] $userName = 'atacenter\localTest',
+#[Parameter(Mandatory=$true, Position=2, HelpMessage="This is the password for the local user for installation" )]
 [ValidateNotNullOrEmpty()]
-[string] $userPwd,
-[Parameter(HelpMessage="Please enter full file name to acquire domain controllers from file, or leave blank to get all DCs in the forest")]
+[string] $userPwd= 'pass@word1Pass@word1',
+#[Parameter(Mandatory=$true, Position=3, HelpMessage="Please enter full file name to acquire domain controllers from file, or leave blank to get all DCs in the forest")]
 [ValidateNotNullOrEmpty()]
-[string] $dcFileName = $null,
+[string] $dcFileName = 'c:\temp\dcs2.txt',
 [string] $errorFile = 'c:\temp\ATADeployErrors.csv',
 [string] $completedFile = 'c:\temp\ATADeployCompleted.csv',
 [string] $destinationRootPath = 'c$\temp'
 
 )
-
-#remove quotes, if any from source full name
-$sourceFullName = $sourceFullName.Replace('"', '')
-$sourceFullName = $sourceFullName.Replace("'", '')
 
 #write failed jobs to file and remove jobs
 function Clean-FaileddJobs(){
@@ -117,7 +113,7 @@ function Get-DomainControllers(){
 }
 
 #will be run as a job for each domain controller
- $Scriptblock = {
+ function DeployAta {
     param ([string] $dcName,
             [string] $destionationRootPath,
             [string] $sourceFullName,
@@ -147,7 +143,7 @@ function Get-DomainControllers(){
         Copy-Item -Path "$sourceFullName" -Destination "$destinationPath" -Force
         $fileName = GetFileNameFromPath $sourceFullName
 
-        $destinationFullPath = Join-Path $destinationPath$fileName
+        $destinationFullPath = Join-Path $destinationPath $fileName
 
         $shell = New-Object -ComObject shell.application
 
@@ -166,25 +162,31 @@ function Get-DomainControllers(){
         $ataExe = $fileName.Replace("zip", "exe") 
         $ataExe = Join-Path $destionationRootPath $ataExe
         $ataExe = $ataExe.Replace('$', ':')
-        $cmdArgs = "/q /norestart NetFrameWorkCommandLineArguments=`"/q`" Console-AccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
-
+        $cmdArgs = "/q /norestart NetFrameWorkCommandLineArguments=`"'/q`" ConsoleAccountName=`"$userName`" ConsoleAccountPassword=`"$userPwd`""
+    
 #here-strings don't like whitespace or tabs
 $myScriptBlock = [ScriptBlock]::Create(@"
-& cmd '$ataExe' $cmdArgs
+& '$ataExe' $cmdArgs
 
 "@)
+
+
     Write-Verbose "My script block: $myScriptBlock"
-
-    $s = New-PSSession $dcName
-
+   
+    $s = New-PSSession $dcName -Credential $credential
     Invoke-Command -Session $s -ScriptBlock $myScriptBlock -asJob -ErrorAction Continue -WarningAction Continue
-    Remove-PSSession $s
-                    
+    Remove-PSSession $s                  
     }
  }
   
 $maxThreads = 20
 $sleepSeconds = 60
+$credential = Get-Credential
+
+#remove quotes, if any from source full name
+$sourceFullName = $sourceFullName.Replace('"', '')
+$sourceFullName = $sourceFullName.Replace("'", '')
+
 
 #create the completed file to store results
 if(!(Test-Path $completedFile)){
@@ -210,7 +212,7 @@ foreach($dc in $domainControllers){
    
     Clean-CompletedJobs
 
-    $job = Start-Job -Name $dc -ScriptBlock $ScriptBlock -ArgumentList $dc, $destinationPath, $sourceFullName $userName $userPwd
+    DeployAta $dc $destinationRootPath $sourceFullName $userName $userPwd
     Write-Host Started job $job.Name
     Write-Host "Running job count is $runningCount"
     $error.clear()
