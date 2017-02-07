@@ -27,7 +27,6 @@ Parameters:
    
     Defaults:
     
-    Parameter $errorFile defaults to c:\temp\ATADeployErrors.csv
     Parameter $completedFile defaults to c:\temp\ATADeployCompleted.csv
     Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
 #>
@@ -48,7 +47,6 @@ param(
 [Parameter(HelpMessage="Please enter destination directory for installation media (UNC path,. e.g., c$\temp")]
 [ValidateNotNullOrEmpty()]
 [string] $destinationRootPath = 'c$\temp',
-[string] $errorFile = 'c:\temp\ATADeployErrors.csv',
 [string] $completedFile = 'c:\temp\ATADeployCompleted.csv'
 )
 
