@@ -16,6 +16,7 @@ extract Microsoft ATA Gateway Setup.zip file
 run the Microsoft ATA Gateway Setup.exe file with /q (quiet) parameter. Prevents restart (/norestart).  If restart is desired remove the /norestart parameter in the command line.
 
 ###Assumes: 
+Gateways meet minimum software and hardware requirements.
 User name and password provided are a valid user in the local ATA Center Microsoft Advanced Threat Analytics Administrators group.  
 The correct ATA Gateway zip file is referenced.  
 Input and output files have valid locations.  
