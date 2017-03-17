@@ -1,10 +1,12 @@
-﻿<#
-This script will deploy ATA Gateway to domain controllers or standalone ATA Gateway servers.
+<#
+.SYNOPSIS
+This script will deploy the ATA Gateway to domain controllers or standalone ATA Gateway servers.
 
+.DESCRIPTION
 ATA Gateway servers must be enabled for PowerShell remoting (see Enable-PSRemoting)
 The script will prompt for credentials.  These credentials require read, write and execute privileges on the gateway servers (usually a DADM).
 
-The script's $userName and $userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group. 
+The script's userName and userPwd are the local account created on the ATA Server that is a member of Microsoft Advanced Threat Analytics Administrator group. 
 Ensure that this low privileged account is used and consider changing the password afterward, as the script transmits this in the clear to the servers.
 
 The script will launch a job for each server:
@@ -17,18 +19,28 @@ Assumes:
 User name and password provided are a valid user in the local ATA Center Microsoft Advanced Threat Analytics Administrators group.
 Input and output files have valid locations.
 Active Directory module has been installed
+ATA prerequisites are installed on target server.
 
-Parameters:
-    Mandatory:
-    $zipMediaName - full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
-    $userName - user name with privileges to install gateway
-    $userPwd - password for user
-    $serverFileName file name that has the list of domain controllers/standalone servers to install. 
-   
-    Defaults:
-    
-    Parameter $completedFile defaults to c:\temp\ATADeployCompleted.csv
-    Parameter $destinationRootPath defaults to c$\temp\ - appends to UNC filepath
+.PARAMETER zipMediaName 
+Mandatory: Full path and name to the zip file, e.g. "c:\temp\microsoft ata gateway setup.zip"
+.PARAMETER userName 
+Mandatory: User name with privileges to install gateway
+.PARAMETER userPwd 
+Mandatory: Password for user
+.PARAMETER serverFileName 
+Mandatory: File name that has the list of domain controllers/standalone servers to install. 
+.PARAMETER destinationRootPath 
+Mandatory: File name on destination server where files will be unzipped. Defaults to c$\temp\ - appends to UNC filepath
+.PARAMETER completedFile 
+Mandatory: File name to store completed server names. Defaults to c:\temp\ATADeployCompleted.csv
+
+.EXAMPLE
+./RunLightweightGatewayInstallation.ps1 "c:\temp\ATA Gateway Installation.zip" localUserName localPassword dcList.txt c$\temp c$\temp c:\temp\ATADeployCompleted.csv
+.EXAMPLE
+./RunLightweightGatewayInstallation.ps1 "c:\temp\ATA Gateway Installation.zip" localUserName localPassword dcList.txt 
+
+ .LINK
+ https://github.com/csmithk/ataGatewayDeploy
 #>
 
 param(
@@ -209,3 +221,4 @@ Clean-Jobs
 $currentTime = Get-Date
 
 Write-Host "Finished script $currentTime"
+
